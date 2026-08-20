@@ -10,6 +10,8 @@ import { OrganisationsService } from '../organisations/organisations.service';
 import { CreateCommitteeDto } from './dto/create-committee.dto';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '@prisma/client';
 import { CAN_MANAGE_COMMITTEES } from '../common/auth/roles.constants';
 
 @Injectable()
@@ -20,6 +22,7 @@ export class CommitteesService {
     private readonly prisma: PrismaService,
     private readonly organisationsService: OrganisationsService,
     private readonly auditService: AuditService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getCommittees(organisationId: string, user: AuthenticatedUser) {
@@ -200,6 +203,17 @@ export class CommitteesService {
           entityType: 'Committee',
           entityId: id,
           payload: { addedUserId: userId, role },
+        });
+
+        // Create in-app notification for the newly added committee member
+        await this.notificationsService.createNotification({
+          organisationId: committee.organisationId,
+          recipientId: userId,
+          type: NotificationType.MEETING_CREATED, // Using this as a generic alert since no COMMITTEE_ADDED exists
+          title: 'Added to Committee',
+          message: `You have been added to the "${committee.name}" committee.`,
+          entityType: 'Committee',
+          entityId: id,
         });
 
         return m;

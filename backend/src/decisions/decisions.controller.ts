@@ -69,15 +69,6 @@ export class DecisionsController {
     return this.decisionsService.updateDecision(decisionId, dto, user);
   }
 
-  /** Close / finalise a decision — requires CAN_MANAGE_DECISIONS */
-  @Patch(':decisionId/close')
-  closeDecision(
-    @Param('decisionId', ParseUUIDPipe) decisionId: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.decisionsService.closeDecision(decisionId, user);
-  }
-
   // ─── Voting ───────────────────────────────────────────────────────────────
 
   /** Get aggregated vote summary for a decision */
@@ -87,26 +78,5 @@ export class DecisionsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.decisionsService.getVoteSummary(decisionId, user);
-  }
-
-  /** Cast a vote on an open decision — requires CAN_VOTE + eligibility checks */
-  @Post(':decisionId/votes')
-  castVote(
-    @Param('decisionId', ParseUUIDPipe) decisionId: string,
-    @Body() dto: CastVoteDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.decisionsService.castVote(decisionId, dto, user);
-  }
-
-  /** Change your own vote while the decision is still open */
-  @Patch(':decisionId/votes/:voteId')
-  updateVote(
-    @Param('decisionId', ParseUUIDPipe) decisionId: string,
-    @Param('voteId', ParseUUIDPipe) voteId: string,
-    @Body() dto: CastVoteDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.decisionsService.updateVote(decisionId, voteId, dto, user);
   }
 }

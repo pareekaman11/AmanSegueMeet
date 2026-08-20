@@ -39,15 +39,4 @@ export class ResolutionsController {
     return this.resolutionsService.createResolution(dto, user);
   }
 
-  @Post(':id/vote')
-  castVote(
-    @Param('id') id: string,
-    @Body('status') status: VoteStatus,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    if (!status) {
-      throw new BadRequestException('status body parameter is required');
-    }
-    return this.resolutionsService.castVote(id, status, user);
-  }
 }

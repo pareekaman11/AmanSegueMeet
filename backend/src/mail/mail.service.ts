@@ -97,6 +97,10 @@ export class MailService {
       if (meeting.location) {
         htmlContent += `<p><strong>Location:</strong> ${meeting.location}</p>`;
       }
+      
+      if (meeting.videoLink) {
+        htmlContent += `<p><strong>Video Link:</strong> <a href="${meeting.videoLink}">${meeting.videoLink}</a></p>`;
+      }
 
       htmlContent += `<p>Please log in to SegueMeet to view the agenda and documents.</p>`;
 
@@ -171,6 +175,10 @@ export class MailService {
 
       if (meeting.location) {
         htmlContent += `<p><strong>Location:</strong> ${meeting.location}</p>`;
+      }
+      
+      if (meeting.videoLink) {
+        htmlContent += `<p><strong>Video Link:</strong> <a href="${meeting.videoLink}">${meeting.videoLink}</a></p>`;
       }
 
       const sequence = meeting.updatedAt ? Math.floor(new Date(meeting.updatedAt).getTime() / 1000) : 1;

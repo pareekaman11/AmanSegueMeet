@@ -70,12 +70,25 @@ export function useCloseDecision() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await api.patch(`/decisions/${id}/close`);
+      const res = await api.post(`/votes/decision/${id}/close`);
       return res.data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["decision", data.id] });
-      queryClient.invalidateQueries({ queryKey: ["decisions", data.organisationId] });
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["decision", variables] });
+      queryClient.invalidateQueries({ queryKey: ["decisions"] });
+    },
+  });
+}
+
+export function useCloseResolution() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/votes/resolution/${id}/close`);
+      return res.data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["resolutions"] });
     },
   });
 }
@@ -84,21 +97,7 @@ export function useCastDecisionVote() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ decisionId, ...data }: any) => {
-      const res = await api.post(`/decisions/${decisionId}/votes`, data);
-      return res.data;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["decision", variables.decisionId] });
-      queryClient.invalidateQueries({ queryKey: ["decision-votes", variables.decisionId] });
-    },
-  });
-}
-
-export function useUpdateDecisionVote() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ decisionId, voteId, ...data }: any) => {
-      const res = await api.patch(`/decisions/${decisionId}/votes/${voteId}`, data);
+      const res = await api.post(`/votes/decision/${decisionId}`, data);
       return res.data;
     },
     onSuccess: (_, variables) => {
@@ -139,7 +138,7 @@ export function useCastResolutionVote() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ resolutionId, status }: any) => {
-      const res = await api.post(`/resolutions/${resolutionId}/vote`, { status });
+      const res = await api.post(`/votes/resolution/${resolutionId}`, { vote: status });
       return res.data;
     },
     onSuccess: (_, variables) => {

@@ -138,6 +138,7 @@ export function AddMeetingModal({ organisationId, committeeId, trigger }: AddMee
         endTime: formatTime24(endHour, endMin, endAmPm),
         timeZone,
         location: locString,
+        videoLink,
         attendeeIds,
         committeeId,
         committeeVisible: committeeId ? true : false,

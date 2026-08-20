@@ -12,7 +12,10 @@ import { OrganisationsService } from '../organisations/organisations.service';
 import { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CAN_MANAGE_DECISIONS, CAN_VOTE } from '../common/auth/roles.constants';
-import { DecisionStatus } from '@prisma/client';
+import {
+  DecisionStatus,
+  DecisionOutcome,
+} from '@prisma/client';
 
 @Injectable()
 export class DecisionsService {
@@ -178,17 +181,32 @@ export class DecisionsService {
   }
 
   async closeDecision(decisionId: string, user: AuthenticatedUser) {
-    const decision = await this.prisma.decision.findUnique({ where: { id: decisionId } });
+    const decision = await this.prisma.decision.findUnique({
+      where: { id: decisionId },
+      include: { votes: true },
+    });
     if (!decision) throw new NotFoundException('Decision not found');
     await this.organisationsService.requireRole(decision.organisationId, user.id, CAN_MANAGE_DECISIONS);
     if (decision.status !== DecisionStatus.OPEN) {
       throw new BadRequestException('Decision already closed');
     }
+
+    // Calculate outcome
+    let outcome: DecisionOutcome = DecisionOutcome.FAILED;
+    const inFavour = decision.votes.filter(v => v.vote === 'IN_FAVOUR').length;
+    const against = decision.votes.filter(v => v.vote === 'AGAINST').length;
+    
+    if (inFavour > against) {
+      outcome = DecisionOutcome.PASSED;
+    } else if (inFavour === against && inFavour > 0) {
+      outcome = DecisionOutcome.TIED;
+    }
+
     try {
       const closed = await this.prisma.$transaction(async (tx) => {
         const c = await tx.decision.update({
           where: { id: decisionId },
-          data: { status: DecisionStatus.CLOSED },
+          data: { status: DecisionStatus.CLOSED, outcome },
         });
         await this.auditService.logTx(tx, {
           organisationId: decision.organisationId,
@@ -196,7 +214,7 @@ export class DecisionsService {
           action: 'decision.closed',
           entityType: 'Decision',
           entityId: decisionId,
-          payload: {},
+          payload: { outcome },
         });
         return c;
       });

@@ -45,6 +45,10 @@ export class CreateMeetingDto {
   location: string;
 
   @IsOptional()
+  @IsString()
+  videoLink?: string;
+
+  @IsOptional()
   @IsIanaTimeZone()
   timeZone?: string;
 

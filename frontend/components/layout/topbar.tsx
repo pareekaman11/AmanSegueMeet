@@ -140,11 +140,6 @@ export function Topbar() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <Button className="hidden md:flex bg-[#6b21a8] hover:bg-[#581c87] text-white rounded-md px-4 h-9 items-center gap-2">
-          <Sparkles className="w-4 h-4" />
-          Ask AI
-        </Button>
       </div>
     </header>
   );

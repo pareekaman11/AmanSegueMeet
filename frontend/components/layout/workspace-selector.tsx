@@ -20,6 +20,7 @@ interface WorkspaceSelectorProps {
   currentWorkspaceId: string;
   boards: Board[];
   committees: Committee[];
+  userMemberships?: { organisationId: string; role: string }[];
   onSelectWorkspace: (id: string, name: string, type: 'board' | 'committee') => void;
   onAddBoard: () => void;
   onAddCommittee: () => void;
@@ -31,6 +32,7 @@ export function WorkspaceSelector({
   currentWorkspaceId,
   boards,
   committees,
+  userMemberships = [],
   onSelectWorkspace,
   onAddBoard,
   onAddCommittee,
@@ -47,6 +49,22 @@ export function WorkspaceSelector({
   const deleteBoard = useDeleteBoard();
   const renameCommittee = useRenameCommittee();
   const deleteCommittee = useDeleteCommittee();
+
+  const canManageBoard = (boardId: string) => {
+    const membership = userMemberships.find(m => m.organisationId === boardId);
+    return membership && ['BOARD_ADMIN', 'CHAIR', 'SECRETARY'].includes(membership.role);
+  };
+
+  const canDeleteBoard = (boardId: string) => {
+    const membership = userMemberships.find(m => m.organisationId === boardId);
+    return membership && membership.role === 'BOARD_ADMIN';
+  };
+
+  const canManageCommittee = () => {
+    // Committees inherit permissions from the active workspace
+    const membership = userMemberships.find(m => m.organisationId === currentWorkspaceId);
+    return membership && ['BOARD_ADMIN', 'CHAIR', 'SECRETARY'].includes(membership.role);
+  };
 
   // Filter boards and committees by search
   const filteredBoards = boards.filter(b =>
@@ -187,31 +205,37 @@ export function WorkspaceSelector({
                       </button>
 
                       {/* Action Menu */}
-                      <div className="hidden group-hover:flex items-center gap-1 shrink-0 ml-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingId(board.id);
-                            setEditingName(board.name);
-                          }}
-                          className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700"
-                          title="Rename"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Delete "${board.name}"? This cannot be undone.`)) {
-                              deleteBoard.mutate(board.id);
-                            }
-                          }}
-                          className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+                      {(canManageBoard(board.id) || canDeleteBoard(board.id)) && (
+                        <div className="hidden group-hover:flex items-center gap-1 shrink-0 ml-2">
+                          {canManageBoard(board.id) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingId(board.id);
+                                setEditingName(board.name);
+                              }}
+                              className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700"
+                              title="Rename"
+                            >
+                              ✏️
+                            </button>
+                          )}
+                          {canDeleteBoard(board.id) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete "${board.name}"? This cannot be undone.`)) {
+                                  deleteBoard.mutate(board.id);
+                                }
+                              }}
+                              className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                              title="Delete"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -271,31 +295,33 @@ export function WorkspaceSelector({
                       </button>
 
                       {/* Action Menu */}
-                      <div className="hidden group-hover:flex items-center gap-1 shrink-0 ml-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingId(committee.id);
-                            setEditingName(committee.name);
-                          }}
-                          className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700"
-                          title="Rename"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Delete "${committee.name}"? This cannot be undone.`)) {
-                              deleteCommittee.mutate(committee.id);
-                            }
-                          }}
-                          className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+                      {canManageCommittee() && (
+                        <div className="hidden group-hover:flex items-center gap-1 shrink-0 ml-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(committee.id);
+                              setEditingName(committee.name);
+                            }}
+                            className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700"
+                            title="Rename"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Delete "${committee.name}"? This cannot be undone.`)) {
+                                deleteCommittee.mutate(committee.id);
+                              }
+                            }}
+                            className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

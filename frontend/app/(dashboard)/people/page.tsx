@@ -30,6 +30,8 @@ export default function PeoplePage() {
 
   const { user } = useAuth();
   const orgId = user?.memberships?.[0]?.organisationId || user?.memberships?.[0]?.organisation?.id;
+  const userRole = user?.memberships?.[0]?.role;
+  const canManagePeople = ["BOARD_ADMIN", "CHAIR", "SECRETARY"].includes(userRole || "");
 
   const { data: orgData } = useQuery({
     queryKey: ["organisation", orgId],
@@ -143,13 +145,15 @@ export default function PeoplePage() {
             Add New Interest
           </Button>
         ) : (
-          <Button 
-            onClick={() => setIsAddPersonOpen(true)}
-            className="bg-slate-300 hover:bg-slate-400 text-slate-700 rounded-md px-6 shadow-sm flex items-center gap-2 font-medium h-9"
-          >
-            <User className="w-4 h-4" />
-            Add Person
-          </Button>
+          canManagePeople && (
+            <Button 
+              onClick={() => setIsAddPersonOpen(true)}
+              className="bg-slate-300 hover:bg-slate-400 text-slate-700 rounded-md px-6 shadow-sm flex items-center gap-2 font-medium h-9"
+            >
+              <User className="w-4 h-4" />
+              Add Person
+            </Button>
+          )
         )}
       </div>
 

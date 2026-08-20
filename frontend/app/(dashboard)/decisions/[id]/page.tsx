@@ -10,9 +10,9 @@ import {
   useGetDecisionById,
   useGetDecisionVoteSummary,
   useCastDecisionVote,
-  useUpdateDecisionVote,
   useCloseDecision,
 } from "@/hooks/use-decisions";
+import { useVotingSocket } from "@/hooks/use-voting-socket";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -27,6 +27,8 @@ export default function DecisionDetailPage() {
   const { data: decision, isLoading, error } = useGetDecisionById(params.id);
   const { data: summary, isLoading: isLoadingSummary } = useGetDecisionVoteSummary(params.id);
   const closeDecision = useCloseDecision();
+
+  useVotingSocket('decision', params.id as string);
 
   if (isLoading || isLoadingSummary) {
     return (
@@ -66,6 +68,11 @@ export default function DecisionDetailPage() {
               <Badge variant={decision.status === "OPEN" ? "default" : "secondary"}>
                 {decision.status}
               </Badge>
+              {decision.status === "CLOSED" && decision.outcome && (
+                <Badge variant={decision.outcome === "PASSED" ? "default" : decision.outcome === "FAILED" ? "destructive" : "secondary"} className={decision.outcome === "PASSED" ? "bg-green-600" : ""}>
+                  {decision.outcome}
+                </Badge>
+              )}
               {decision.meeting && (
                 <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
                   Meeting: {decision.meeting.title}
@@ -128,7 +135,6 @@ export default function DecisionDetailPage() {
 
 function VotingPanel({ decision, user }: { decision: any, user: any }) {
   const castVote = useCastDecisionVote();
-  const updateVote = useUpdateDecisionVote();
   
   const [comment, setComment] = useState("");
   
@@ -148,20 +154,13 @@ function VotingPanel({ decision, user }: { decision: any, user: any }) {
   }
 
   const handleVote = (vote: string) => {
-    if (existingVote) {
-      updateVote.mutate({ decisionId: decision.id, voteId: existingVote.id, vote, comment: comment || undefined }, {
-        onSuccess: () => toast.success("Vote updated"),
-        onError: (err: any) => toast.error(err.response?.data?.message || "Failed to update vote")
-      });
-    } else {
-      castVote.mutate({ decisionId: decision.id, vote, comment: comment || undefined }, {
-        onSuccess: () => toast.success("Vote cast successfully"),
-        onError: (err: any) => toast.error(err.response?.data?.message || "Failed to cast vote")
-      });
-    }
+    castVote.mutate({ decisionId: decision.id, vote, comment: comment || undefined }, {
+      onSuccess: () => toast.success("Vote recorded successfully"),
+      onError: (err: any) => toast.error(err.response?.data?.message || "Failed to record vote")
+    });
   };
 
-  const isPending = castVote.isPending || updateVote.isPending;
+  const isPending = castVote.isPending;
 
   return (
     <div className="space-y-4">

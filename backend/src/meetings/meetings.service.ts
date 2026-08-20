@@ -56,6 +56,7 @@ export class MeetingsService {
             endTime: dto.endTime,
             timeZone: tz,
             location: dto.location,
+            videoLink: dto.videoLink,
             isRemote: dto.isRemote ?? false,
             administrator: dto.administrator,
             notes: dto.notes,
@@ -293,6 +294,7 @@ export class MeetingsService {
             endTime: dto.endTime,
             ...(tz && { timeZone: tz }),
             location: dto.location,
+            videoLink: dto.videoLink,
             isRemote: dto.isRemote,
             administrator: dto.administrator,
             notes: dto.notes,
@@ -482,6 +484,17 @@ export class MeetingsService {
           });
 
           return a;
+        });
+
+        // Create in-app notification for the newly added attendee
+        await this.notificationsService.createNotification({
+          organisationId: meeting.organisationId,
+          recipientId: userId,
+          type: NotificationType.MEETING_CREATED,
+          title: 'Added to Meeting',
+          message: `You have been added to the meeting "${meeting.title}" scheduled for ${meeting.date}.`,
+          entityType: 'Meeting',
+          entityId: meeting.id,
         });
 
         // Send email invite asynchronously

@@ -21,6 +21,7 @@ import { AnnualPlanModule } from './annual-plan/annual-plan.module';
 import { InterestsModule } from './interests/interests.module';
 import { MailModule } from './mail/mail.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { VotesModule } from './votes/votes.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -105,6 +106,9 @@ import { GlobalThrottlerGuard } from './common/guards/global-throttler.guard';
 
     /** Analytics — Governance reporting and dashboards */
     AnalyticsModule,
+
+    /** Votes — Meeting voting management */
+    VotesModule,
   ],
   controllers: [AppController],
   providers: [

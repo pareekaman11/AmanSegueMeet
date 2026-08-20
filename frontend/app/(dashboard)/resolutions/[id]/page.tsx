@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { useGetResolutions, useCastResolutionVote } from "@/hooks/use-decisions";
+import { useVotingSocket } from "@/hooks/use-voting-socket";
 import { toast } from "sonner";
 
 export default function ResolutionDetailPage() {
@@ -18,6 +19,8 @@ export default function ResolutionDetailPage() {
   // Since we don't have a getResolutionById endpoint, we fetch all and find the one.
   const { data: resolutions, isLoading, error } = useGetResolutions(orgId);
   const resolution = resolutions?.find((r: any) => r.id === params.id);
+
+  useVotingSocket('resolution', params.id as string);
 
   if (isLoading) {
     return (

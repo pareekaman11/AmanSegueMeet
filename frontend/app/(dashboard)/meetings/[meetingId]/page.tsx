@@ -30,6 +30,8 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
   const [isGeneratingNotice, setIsGeneratingNotice] = useState(false);
   const [showMyTime, setShowMyTime] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [isEditingVideo, setIsEditingVideo] = useState(false);
+  const [videoLinkInput, setVideoLinkInput] = useState("");
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // Close the ⋮ menu when clicking outside
@@ -61,7 +63,6 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
     enabled: !!meeting?.organisationId,
   });
 
-  // Update administrator mutation
   const updateAdminMutation = useMutation({
     mutationFn: async (administrator: string) => {
       const res = await api.patch(`/meetings/${meetingId}`, { administrator });
@@ -72,6 +73,19 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
       toast.success("Meeting administrator updated");
     },
     onError: () => toast.error("Failed to update administrator"),
+  });
+
+  const updateVideoLinkMutation = useMutation({
+    mutationFn: async (videoLink: string) => {
+      const res = await api.patch(`/meetings/${meetingId}`, { videoLink });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      toast.success("Video link updated");
+      setIsEditingVideo(false);
+    },
+    onError: () => toast.error("Failed to update video link"),
   });
 
   if (isLoading) {
@@ -338,13 +352,52 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
 
         {/* Video URL */}
         <div className="text-sm font-semibold text-slate-700 pt-1">Video URL:</div>
-        <div>
-          {meeting.videoLink ? (
-            <a href={meeting.videoLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded shadow-sm transition-colors">
-              Join Video Meeting
-            </a>
+        <div className="flex items-start">
+          {isEditingVideo ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                value={videoLinkInput}
+                onChange={(e) => setVideoLinkInput(e.target.value)}
+                className="border border-slate-200 rounded text-sm px-3 py-1.5 w-64 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                placeholder="https://zoom.us/j/..."
+              />
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => updateVideoLinkMutation.mutate(videoLinkInput)}
+                disabled={updateVideoLinkMutation.isPending}
+              >
+                {updateVideoLinkMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsEditingVideo(false)}
+                disabled={updateVideoLinkMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </div>
           ) : (
-            <span className="text-slate-500 italic">No video link provided</span>
+            <div className="flex items-center gap-4">
+              {meeting.videoLink ? (
+                <a href={meeting.videoLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded shadow-sm transition-colors">
+                  Join Video Meeting
+                </a>
+              ) : (
+                <span className="text-slate-500 italic">No video link provided</span>
+              )}
+              <button
+                onClick={() => {
+                  setVideoLinkInput(meeting.videoLink || "");
+                  setIsEditingVideo(true);
+                }}
+                className="text-sm text-blue-600 hover:underline font-medium"
+              >
+                Edit
+              </button>
+            </div>
           )}
         </div>
 

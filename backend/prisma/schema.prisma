@@ -92,6 +92,12 @@ enum DecisionStatus {
   CLOSED
 }
 
+enum DecisionOutcome {
+  PASSED
+  FAILED
+  TIED
+}
+
 enum BoardPackStatus {
   DRAFT
   PUBLISHED
@@ -103,21 +109,21 @@ enum BoardPackStatus {
 // ─────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  name         String
-  mobileNumber String?
-  title        String?
-  suffix       String?
-  avatarUrl    String?
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  name                 String
+  mobileNumber         String?
+  title                String?
+  suffix               String?
+  avatarUrl            String?
   /// Bcrypt-hashed password — set once auth module is built.
-  passwordHash String?
+  passwordHash         String?
   /// Token used for password resets
   resetPasswordToken   String?
   /// Expiration time for the password reset token
   resetPasswordExpires DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   memberships          OrganisationMember[]
   assignedActionItems  MinutesActionItem[]  @relation("ActionAssignee")
@@ -222,7 +228,7 @@ model Meeting {
   endTime          String /// "HH:MM"
   timeZone         String? /// IANA timezone, null means legacy floating time
   location         String
-  // videoLink      String?
+  videoLink        String?
   isRemote         Boolean       @default(false)
   administrator    String? /// Free-text until People module exists
   notes            String?
@@ -496,19 +502,20 @@ model Notification {
 }
 
 model Decision {
-  id               String         @id @default(uuid())
+  id               String           @id @default(uuid())
   organisationId   String
   meetingId        String?
   createdById      String?
   title            String
   description      String?
   date             String /// ISO date "YYYY-MM-DD"
-  status           DecisionStatus @default(OPEN)
+  status           DecisionStatus   @default(OPEN)
+  outcome          DecisionOutcome?
   votingEndsAt     DateTime? // optional deadline for voting
   committeeId      String?
-  committeeVisible Boolean        @default(false)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  committeeVisible Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   organisation Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   committee    Committee?     @relation(fields: [committeeId], references: [id], onDelete: SetNull)

@@ -33,6 +33,10 @@ export class UpdateMeetingDto {
   location?: string;
 
   @IsOptional()
+  @IsString()
+  videoLink?: string;
+
+  @IsOptional()
   @IsIanaTimeZone()
   timeZone?: string;
 

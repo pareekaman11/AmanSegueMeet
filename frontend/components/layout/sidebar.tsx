@@ -155,6 +155,7 @@ export function SidebarInner({ isCollapsed = false, onToggleCollapse }: { isColl
             currentWorkspaceId={currentOrg?.id || ""}
             boards={boards}
             committees={committees}
+            userMemberships={user?.memberships || []}
             onSelectWorkspace={(id, name, type) => {
               if (type === 'board') {
                 if (setActiveOrgId) {

@@ -3,9 +3,10 @@ import { CommitteesService } from './committees.service';
 import { CommitteesController } from './committees.controller';
 import { OrganisationsModule } from '../organisations/organisations.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [OrganisationsModule, AuditModule],
+  imports: [OrganisationsModule, AuditModule, NotificationsModule],
   controllers: [CommitteesController],
   providers: [CommitteesService],
   exports: [CommitteesService],
