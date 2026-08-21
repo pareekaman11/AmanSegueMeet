@@ -56,16 +56,13 @@ export function ManageTenureNotificationsModal({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between">
+        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between pr-10">
           <div className="flex items-center gap-3">
             <div className="bg-blue-100 p-1.5 rounded-md text-blue-600">
               <Bell className="w-5 h-5" />
             </div>
             <DialogTitle className="text-lg">Tenure Notifications</DialogTitle>
           </div>
-          <button onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-slate-600">
-            <X className="w-5 h-5" />
-          </button>
         </DialogHeader>
 
         <div className="p-6 space-y-4">

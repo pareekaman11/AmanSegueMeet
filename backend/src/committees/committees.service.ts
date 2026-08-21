@@ -13,6 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '@prisma/client';
 import { CAN_MANAGE_COMMITTEES } from '../common/auth/roles.constants';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class CommitteesService {
@@ -23,6 +24,7 @@ export class CommitteesService {
     private readonly organisationsService: OrganisationsService,
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly mailService: MailService,
   ) {}
 
   async getCommittees(organisationId: string, user: AuthenticatedUser) {
@@ -217,6 +219,17 @@ export class CommitteesService {
         });
 
         return m;
+      });
+
+      // Send the email notification asynchronously
+      this.mailService.sendCommitteeMemberAddedEmail(
+        member.user.email,
+        member.user.name,
+        committee.name,
+        member.role,
+        currentUser.name
+      ).catch(error => {
+        this.logger.error(`Unhandled error sending committee member added email to ${member.user.email}`, error);
       });
 
       return member;

@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from '../auth/auth.types';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { QueryMeetingsDto } from './dto/query-meetings.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { OrganisationRole, Prisma, NotificationType } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -56,6 +57,7 @@ export class MeetingsService {
             endTime: dto.endTime,
             timeZone: tz,
             location: dto.location,
+            locationId: dto.locationId,
             videoLink: dto.videoLink,
             isRemote: dto.isRemote ?? false,
             administrator: dto.administrator,
@@ -63,11 +65,13 @@ export class MeetingsService {
             status: dto.status,
             committeeId: dto.committeeId,
             committeeVisible: dto.committeeVisible,
+            ...(dto.requiredQuorum !== undefined && { requiredQuorum: dto.requiredQuorum }),
             ...(dto.attendeeIds && dto.attendeeIds.length > 0 && {
               attendees: {
                 create: dto.attendeeIds.map(userId => ({
                   userId,
-                  rsvp: 'PENDING'
+                  rsvp: 'PENDING',
+                  attendanceStatus: 'PRESENT',
                 }))
               }
             })
@@ -254,7 +258,12 @@ export class MeetingsService {
       }
     }
 
-    return meeting;
+    const quorum = await this.calculateQuorumMetrics(id);
+
+    return {
+      ...meeting,
+      quorum,
+    };
   }
 
   /**
@@ -294,6 +303,7 @@ export class MeetingsService {
             endTime: dto.endTime,
             ...(tz && { timeZone: tz }),
             location: dto.location,
+            ...(dto.locationId !== undefined && { locationId: dto.locationId }),
             videoLink: dto.videoLink,
             isRemote: dto.isRemote,
             administrator: dto.administrator,
@@ -302,6 +312,7 @@ export class MeetingsService {
             agendaStatus: dto.agendaStatus,
             ...(dto.committeeId !== undefined && { committeeId: dto.committeeId }),
             ...(dto.committeeVisible !== undefined && { committeeVisible: dto.committeeVisible }),
+            ...(dto.requiredQuorum !== undefined && { requiredQuorum: dto.requiredQuorum }),
           },
         });
 
@@ -594,5 +605,175 @@ export class MeetingsService {
       type: 'application/pdf',
       disposition: `attachment; filename="notice-${id}.pdf"`,
     });
+  }
+
+  /**
+   * Helper to calculate quorum and participation metrics for a meeting
+   */
+  async calculateQuorumMetrics(meetingId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        attendees: { include: { user: true } },
+        organisation: { select: { id: true, settings: true } },
+        committee: { include: { members: true } },
+      },
+    });
+
+    if (!meeting) {
+      throw new NotFoundException('Meeting not found');
+    }
+
+    // Determine eligible members count
+    let totalEligible = 0;
+    if (meeting.attendees && meeting.attendees.length > 0) {
+      totalEligible = meeting.attendees.length;
+    } else if (meeting.committeeId && meeting.committee?.members) {
+      totalEligible = meeting.committee.members.length;
+    } else {
+      totalEligible = await this.prisma.organisationMember.count({
+        where: { organisationId: meeting.organisationId },
+      });
+    }
+
+    // Determine required quorum count
+    const orgSettings = (meeting.organisation?.settings as Record<string, any>) || {};
+    let requiredQuorum = 0;
+
+    if (meeting.requiredQuorum != null && Number(meeting.requiredQuorum) > 0) {
+      requiredQuorum = Number(meeting.requiredQuorum);
+    } else if (orgSettings.defaultQuorumCount && Number(orgSettings.defaultQuorumCount) > 0) {
+      requiredQuorum = Number(orgSettings.defaultQuorumCount);
+    } else if (orgSettings.defaultQuorumPercentage && Number(orgSettings.defaultQuorumPercentage) > 0) {
+      requiredQuorum = Math.ceil((totalEligible * Number(orgSettings.defaultQuorumPercentage)) / 100);
+    } else {
+      // Standard board governance default: Majority (50% + 1) or at least 1
+      requiredQuorum = totalEligible > 0 ? Math.floor(totalEligible / 2) + 1 : 0;
+    }
+
+    // Calculate present and participant breakdown
+    let presentCount = 0;
+    let absentCount = 0;
+    let excusedCount = 0;
+    let remoteCount = 0;
+    let lateCount = 0;
+
+    for (const attendee of meeting.attendees) {
+      const status = (attendee.attendanceStatus || (attendee.rsvp === 'DECLINED' ? 'ABSENT' : 'PRESENT')).toUpperCase();
+      if (status === 'PRESENT') {
+        presentCount++;
+      } else if (status === 'REMOTE') {
+        presentCount++;
+        remoteCount++;
+      } else if (status === 'LATE') {
+        presentCount++;
+        lateCount++;
+      } else if (status === 'EXCUSED') {
+        excusedCount++;
+      } else if (status === 'ABSENT') {
+        absentCount++;
+      } else {
+        if (attendee.rsvp === 'ACCEPTED') {
+          presentCount++;
+        }
+      }
+    }
+
+    const isQuorumMet = totalEligible > 0 && presentCount >= requiredQuorum;
+    const participationRate = totalEligible > 0 ? Math.round((presentCount / totalEligible) * 100) : 0;
+
+    return {
+      meetingId,
+      totalEligible,
+      requiredQuorum,
+      presentCount,
+      absentCount,
+      excusedCount,
+      remoteCount,
+      lateCount,
+      isQuorumMet,
+      participationRate,
+      quorumStatus: isQuorumMet ? 'MET' : 'NOT_MET',
+    };
+  }
+
+  /**
+   * GET /meetings/:id/quorum
+   */
+  async getQuorumAndParticipation(meetingId: string, user: AuthenticatedUser) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: { organisationId: true },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+
+    await this.organisationsService.requireMembership(meeting.organisationId, user.id);
+
+    return this.calculateQuorumMetrics(meetingId);
+  }
+
+  /**
+   * PATCH /meetings/:id/attendees/:attendeeId/attendance
+   */
+  async updateAttendeeAttendance(
+    meetingId: string,
+    attendeeId: string,
+    dto: UpdateAttendanceDto,
+    user: AuthenticatedUser,
+  ) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+
+    await this.organisationsService.requireRole(
+      meeting.organisationId,
+      user.id,
+      CAN_MANAGE_MEETINGS,
+    );
+
+    // Look up attendee by id or userId
+    const attendee = await this.prisma.meetingAttendee.findFirst({
+      where: {
+        meetingId,
+        OR: [{ id: attendeeId }, { userId: attendeeId }],
+      },
+      include: { user: true },
+    });
+
+    if (!attendee) throw new NotFoundException('Attendee not found in this meeting');
+
+    const updatedAttendee = await this.prisma.$transaction(async (tx) => {
+      const a = await tx.meetingAttendee.update({
+        where: { id: attendee.id },
+        data: {
+          attendanceStatus: dto.attendanceStatus,
+        },
+        include: { user: true },
+      });
+
+      await this.auditService.logTx(tx, {
+        organisationId: meeting.organisationId,
+        actorId: user.id,
+        action: 'meeting.attendance_updated',
+        entityType: 'MeetingAttendee',
+        entityId: a.id,
+        payload: {
+          meetingId,
+          userId: a.userId,
+          attendanceStatus: dto.attendanceStatus,
+          previousStatus: attendee.attendanceStatus,
+        },
+      });
+
+      return a;
+    });
+
+    const quorum = await this.calculateQuorumMetrics(meetingId);
+
+    return {
+      attendee: updatedAttendee,
+      quorum,
+    };
   }
 }

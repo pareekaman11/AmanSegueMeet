@@ -17,7 +17,7 @@ describe('Session Hardening & Identity (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider(MailService)
-      .useValue({ sendMemberAddedEmail: jest.fn().mockResolvedValue(true) })
+      .useValue({ sendMemberAddedEmail: jest.fn().mockResolvedValue(true), sendVerificationEmail: jest.fn().mockResolvedValue(true), sendPasswordResetEmail: jest.fn().mockResolvedValue(true) })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -45,10 +45,13 @@ describe('Session Hardening & Identity (e2e)', () => {
           name: 'Session Test User',
           email: `session-${Date.now()}@example.com`,
           password: 'Password123!',
+          passwordConfirmation: 'Password123!',
           organisationName: 'Session Test Org',
         });
       
-      accessToken = res.body.accessToken;
+      await prisma.user.update({ where: { id: res.body.user.id }, data: { isEmailVerified: true } });
+      const loginRes = await request(app.getHttpServer()).post('/auth/login').send({ email: res.body.user.email, password: 'Password123!' });
+      accessToken = loginRes.body.accessToken;
       userId = res.body.user.id;
     });
 
@@ -104,11 +107,14 @@ describe('Session Hardening & Identity (e2e)', () => {
           name: 'Admin User',
           email: `admin-iso-${Date.now()}@example.com`,
           password: 'Password123!',
+          passwordConfirmation: 'Password123!',
           organisationName: 'Isolation Test Org',
         });
       
-      adminToken = adminRes.body.accessToken;
-      orgId = adminRes.body.organisation.id;
+      await prisma.user.update({ where: { id: adminRes.body.user.id }, data: { isEmailVerified: true } });
+      const adminLoginRes = await request(app.getHttpServer()).post('/auth/login').send({ email: adminRes.body.user.email, password: 'Password123!' });
+      adminToken = adminLoginRes.body.accessToken;
+      orgId = adminRes.body.user.memberships[0].organisation.id;
 
       // Create a second user
       const userRes = await request(app.getHttpServer())
@@ -117,10 +123,13 @@ describe('Session Hardening & Identity (e2e)', () => {
           name: 'Member User',
           email: `member-iso-${Date.now()}@example.com`,
           password: 'Password123!',
+          passwordConfirmation: 'Password123!',
           organisationName: 'Another Org',
         });
       
-      accessToken = userRes.body.accessToken;
+      await prisma.user.update({ where: { id: userRes.body.user.id }, data: { isEmailVerified: true } });
+      const userLoginRes = await request(app.getHttpServer()).post('/auth/login').send({ email: userRes.body.user.email, password: 'Password123!' });
+      accessToken = userLoginRes.body.accessToken;
       memberId = userRes.body.user.id;
 
       // Add the second user to the admin's org

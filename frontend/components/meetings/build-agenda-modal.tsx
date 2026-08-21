@@ -69,14 +69,11 @@ export function BuildAgendaModal({ isOpen, onOpenChange, meetingId }: BuildAgend
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between">
+        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between pr-10">
           <div>
             <DialogTitle className="text-lg">Build agenda</DialogTitle>
             <p className="text-sm text-slate-500 mt-1">Select an option below to start building your agenda.</p>
           </div>
-          <button onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-slate-600">
-            <X className="w-5 h-5" />
-          </button>
         </DialogHeader>
 
         <div className="p-6">

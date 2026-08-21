@@ -121,44 +121,44 @@ export function WorkspaceSelector({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center bg-white border border-slate-200 rounded-xl p-2 shadow-sm mb-4 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors hover:bg-slate-50",
+          "flex items-center bg-white/5 border border-white/10 rounded-xl p-2 shadow-sm mb-4 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all duration-200 hover:bg-white/10 hover:border-white/20 group",
           isCollapsed ? "w-10 h-10 justify-center mx-auto" : "w-full justify-between"
         )}
       >
         <div className="flex items-center gap-3">
           <div className={cn(
-            "bg-slate-200 rounded-lg shrink-0 flex items-center justify-center text-slate-600 font-bold",
+            "bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shrink-0 flex items-center justify-center text-white font-bold shadow-[0_0_10px_rgba(79,70,229,0.5)]",
             isCollapsed ? "w-6 h-6 text-[10px]" : "w-10 h-10 text-sm"
           )}>
-            {currentWorkspace ? currentWorkspace.charAt(0) : "W"}
+            {currentWorkspace ? currentWorkspace.charAt(0).toUpperCase() : "W"}
           </div>
-          {!isCollapsed && <span className="font-semibold text-slate-800 text-[15px] whitespace-nowrap truncate">{currentWorkspace || "Select Workspace"}</span>}
+          {!isCollapsed && <span className="font-semibold text-white/90 text-[15px] whitespace-nowrap truncate">{currentWorkspace || "Select Workspace"}</span>}
         </div>
-        {!isCollapsed && <ChevronDown className={cn("w-4 h-4 text-slate-500 mr-1 shrink-0 transition-transform", isOpen ? 'rotate-180' : '')} />}
+        {!isCollapsed && <ChevronDown className={cn("w-4 h-4 text-white/50 mr-1 shrink-0 transition-transform duration-300 group-hover:text-white/80", isOpen ? 'rotate-180' : '')} />}
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
         <div className={cn(
-          "absolute mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden",
+          "absolute mt-1 bg-[#161824]/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden",
           isCollapsed ? "w-[260px] ml-[44px] -top-2 left-0" : "w-[260px] top-full left-0"
         )}>
           {/* Search Bar */}
-          <div className="relative p-2 border-b border-gray-100">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <div className="relative p-2 border-b border-white/10">
+            <Search className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search boards & committees..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 border-none bg-slate-50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-slate-300 placeholder:text-slate-400"
+              className="w-full pl-8 pr-3 py-1.5 border-none bg-black/20 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder:text-white/30"
             />
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto">
+          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
             {/* Boards Section */}
             <div className="py-1">
-              <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="px-3 py-1.5 text-[11px] font-bold text-white/40 uppercase tracking-wider">
                 Boards
               </div>
               {filteredBoards.length > 0 ? (
@@ -167,8 +167,8 @@ export function WorkspaceSelector({
                     <div
                       key={board.id}
                       className={cn(
-                        "w-full px-2 py-2 text-left text-sm hover:bg-slate-100 outline-none transition-colors rounded-lg flex items-center justify-between group",
-                        currentWorkspaceId === board.id ? 'bg-slate-50' : ''
+                        "w-full px-2 py-2 text-left text-sm hover:bg-white/5 outline-none transition-colors rounded-lg flex items-center justify-between group",
+                        currentWorkspaceId === board.id ? 'bg-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]' : ''
                       )}
                     >
                       <button
@@ -179,7 +179,7 @@ export function WorkspaceSelector({
                         }}
                         className="flex-1 flex items-center gap-3 overflow-hidden text-left"
                       >
-                        <div className={cn(`w-6 h-6 ${getAvatarColor(board.name)} rounded-md flex items-center justify-center text-white text-[11px] font-bold shrink-0`)}>
+                        <div className={cn(`w-6 h-6 ${getAvatarColor(board.name)} rounded-md flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm`)}>
                           {board.name.charAt(0).toUpperCase()}
                         </div>
                         {editingId === board.id ? (
@@ -196,11 +196,11 @@ export function WorkspaceSelector({
                                 setEditingId(null);
                               }
                             }}
-                            className="px-2 py-1 border border-blue-500 rounded text-sm w-full bg-white text-slate-800"
+                            className="px-2 py-1 border border-blue-500/50 rounded text-sm w-full bg-black/40 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : (
-                          <span className={cn("text-slate-800 truncate", currentWorkspaceId === board.id ? 'font-medium' : '')}>{board.name}</span>
+                          <span className={cn("text-white/80 truncate group-hover:text-white transition-colors", currentWorkspaceId === board.id ? 'font-semibold text-white' : '')}>{board.name}</span>
                         )}
                       </button>
 
@@ -214,7 +214,7 @@ export function WorkspaceSelector({
                                 setEditingId(board.id);
                                 setEditingName(board.name);
                               }}
-                              className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700"
+                              className="p-1 hover:bg-white/10 rounded text-white/50 hover:text-white"
                               title="Rename"
                             >
                               ✏️
@@ -228,7 +228,7 @@ export function WorkspaceSelector({
                                   deleteBoard.mutate(board.id);
                                 }
                               }}
-                              className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                              className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300"
                               title="Delete"
                             >
                               🗑️
@@ -240,15 +240,15 @@ export function WorkspaceSelector({
                   ))}
                 </div>
               ) : (
-                <div className="px-4 py-2 text-xs text-gray-400 italic">No boards found</div>
+                <div className="px-4 py-2 text-xs text-white/30 italic">No boards found</div>
               )}
             </div>
 
-            <div className="h-px bg-slate-100 mx-2 my-1"></div>
+            <div className="h-px bg-white/10 mx-2 my-1"></div>
 
             {/* Committees Section */}
             <div className="py-1">
-              <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="px-3 py-1.5 text-[11px] font-bold text-white/40 uppercase tracking-wider">
                 Committees
               </div>
               {filteredCommittees.length > 0 ? (
@@ -257,8 +257,8 @@ export function WorkspaceSelector({
                     <div
                       key={committee.id}
                       className={cn(
-                        "w-full px-2 py-2 text-left text-sm hover:bg-slate-100 outline-none transition-colors rounded-lg flex items-center justify-between group",
-                        currentWorkspaceId === committee.id ? 'bg-slate-50' : ''
+                        "w-full px-2 py-2 text-left text-sm hover:bg-white/5 outline-none transition-colors rounded-lg flex items-center justify-between group",
+                        currentWorkspaceId === committee.id ? 'bg-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]' : ''
                       )}
                     >
                       <button
@@ -269,7 +269,7 @@ export function WorkspaceSelector({
                         }}
                         className="flex-1 flex items-center gap-3 overflow-hidden text-left"
                       >
-                        <div className={cn(`w-6 h-6 ${getAvatarColor(committee.name)} rounded-md flex items-center justify-center text-white text-[11px] font-bold shrink-0`)}>
+                        <div className={cn(`w-6 h-6 bg-slate-800 rounded-md flex items-center justify-center text-white/60 text-[11px] font-bold shrink-0 border border-white/10`)}>
                           {committee.name.charAt(0).toUpperCase()}
                         </div>
                         {editingId === committee.id ? (
@@ -286,11 +286,11 @@ export function WorkspaceSelector({
                                 setEditingId(null);
                               }
                             }}
-                            className="px-2 py-1 border border-blue-500 rounded text-sm w-full bg-white text-slate-800"
+                            className="px-2 py-1 border border-blue-500/50 rounded text-sm w-full bg-black/40 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : (
-                          <span className={cn("text-slate-800 truncate", currentWorkspaceId === committee.id ? 'font-medium' : '')}>{committee.name}</span>
+                          <span className={cn("text-white/80 truncate group-hover:text-white transition-colors", currentWorkspaceId === committee.id ? 'font-semibold text-white' : '')}>{committee.name}</span>
                         )}
                       </button>
 
@@ -303,7 +303,7 @@ export function WorkspaceSelector({
                               setEditingId(committee.id);
                               setEditingName(committee.name);
                             }}
-                            className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700"
+                            className="p-1 hover:bg-white/10 rounded text-white/50 hover:text-white"
                             title="Rename"
                           >
                             ✏️
@@ -315,7 +315,7 @@ export function WorkspaceSelector({
                                 deleteCommittee.mutate(committee.id);
                               }
                             }}
-                            className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                            className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300"
                             title="Delete"
                           >
                             🗑️
@@ -326,36 +326,24 @@ export function WorkspaceSelector({
                   ))}
                 </div>
               ) : (
-                <div className="px-4 py-2 text-xs text-gray-400 italic">No committees found</div>
+                <div className="px-4 py-2 text-xs text-white/30 italic">No committees found</div>
               )}
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="border-t border-gray-100 p-2 space-y-1 bg-slate-50">
-            <button 
+          {/* Add Actions */}
+          <div className="p-2 border-t border-white/10 bg-black/20 space-y-1">
+            <button
               onClick={() => {
                 setIsOpen(false);
                 onAddBoard();
               }}
-              className="w-full px-2 py-2 text-left text-sm text-slate-600 hover:text-slate-900 hover:bg-white transition-colors flex items-center gap-2 rounded-lg outline-none"
+              className="w-full flex items-center gap-2 px-2 py-2 text-sm text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 rounded-lg transition-colors"
             >
-              <div className="border border-slate-300 rounded p-0.5 shrink-0 bg-white">
-                <Plus size={12} className="text-slate-500" />
+              <div className="w-5 h-5 rounded-md bg-blue-500/20 flex items-center justify-center">
+                <Plus className="w-3 h-3 text-blue-400" />
               </div>
-              <span className="font-medium text-[13px]">Add Board</span>
-            </button>
-            <button 
-              onClick={() => {
-                setIsOpen(false);
-                onAddCommittee();
-              }}
-              className="w-full px-2 py-2 text-left text-sm text-slate-600 hover:text-slate-900 hover:bg-white transition-colors flex items-center gap-2 rounded-lg outline-none"
-            >
-              <div className="border border-slate-300 rounded p-0.5 shrink-0 bg-white">
-                <Plus size={12} className="text-slate-500" />
-              </div>
-              <span className="font-medium text-[13px]">Add Committee</span>
+              <span className="font-medium">Add new Board</span>
             </button>
           </div>
         </div>

@@ -88,6 +88,18 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
     onError: () => toast.error("Failed to update video link"),
   });
 
+  const updateAttendanceMutation = useMutation({
+    mutationFn: async ({ attendeeId, attendanceStatus }: { attendeeId: string; attendanceStatus: string }) => {
+      const res = await api.patch(`/meetings/${meetingId}/attendees/${attendeeId}/attendance`, { attendanceStatus });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      toast.success("Attendance status updated");
+    },
+    onError: () => toast.error("Failed to update attendance"),
+  });
+
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -421,22 +433,91 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
           )}
         </div>
 
+        {/* Quorum & Participation */}
+        <div className="text-sm font-semibold text-slate-700 pt-1 mt-4">Quorum & Participation:</div>
+        <div className="mt-4 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm max-w-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-600" />
+                <h3 className="font-semibold text-slate-800 text-sm">Meeting Quorum Status</h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {meeting.quorum?.isQuorumMet ? (
+                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    ✓ Quorum Met
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    ✕ Quorum Not Met
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-b border-slate-100 text-center">
+              <div className="p-2.5 bg-slate-50 rounded-md">
+                <div className="text-xs text-slate-500 font-medium">Required Quorum</div>
+                <div className="text-lg font-bold text-slate-800 mt-0.5">{meeting.quorum?.requiredQuorum ?? "—"}</div>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded-md">
+                <div className="text-xs text-slate-500 font-medium">Present / Remote</div>
+                <div className="text-lg font-bold text-emerald-600 mt-0.5">{meeting.quorum?.presentCount ?? 0}</div>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded-md">
+                <div className="text-xs text-slate-500 font-medium">Total Members</div>
+                <div className="text-lg font-bold text-slate-800 mt-0.5">{meeting.quorum?.totalEligible ?? (meeting.attendees?.length || 0)}</div>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded-md">
+                <div className="text-xs text-slate-500 font-medium">Participation</div>
+                <div className="text-lg font-bold text-blue-600 mt-0.5">{meeting.quorum?.participationRate ?? 0}%</div>
+              </div>
+            </div>
+
+            {/* Participation Progress Bar */}
+            <div className="pt-4 space-y-1.5">
+              <div className="flex justify-between text-xs text-slate-600 font-medium">
+                <span>Participation Rate</span>
+                <span>{meeting.quorum?.presentCount ?? 0} of {meeting.quorum?.totalEligible ?? 0} participating ({meeting.quorum?.participationRate ?? 0}%)</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    meeting.quorum?.isQuorumMet ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}
+                  style={{ width: `${Math.min(meeting.quorum?.participationRate ?? 0, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Attendees / Apologies */}
         <div className="text-sm font-semibold text-slate-700 pt-1 mt-4">Attendees/Apologies:</div>
         <div className="mt-4">
-          <div className="grid grid-cols-2 gap-4 w-[550px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
             <div>
-              <h4 className="text-sm font-semibold text-slate-800 mb-3">Attendees (Invited)</h4>
+              <h4 className="text-sm font-semibold text-slate-800 mb-3">Attendees & Participation</h4>
               <div className="border border-blue-200 bg-blue-50/30 rounded p-2 text-sm text-slate-700 space-y-2 min-h-[48px]">
                 {meeting.attendees?.length > 0 ? (
                   meeting.attendees.map((a: any) => (
-                    <div key={a.id} className="flex justify-between items-center">
-                      <span>{a.user.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        a.rsvp === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
-                        a.rsvp === 'DECLINED' ? 'bg-red-100 text-red-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>{a.rsvp}</span>
+                    <div key={a.id} className="flex justify-between items-center py-1 border-b border-blue-100 last:border-b-0 gap-2">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-slate-800 text-xs">{a.user.name}</span>
+                        <span className="text-[10px] text-slate-500">{a.rsvp || 'PENDING'}</span>
+                      </div>
+                      <select
+                        className="text-xs border border-slate-200 rounded px-2 py-1 bg-white text-slate-700 font-medium outline-none focus:ring-1 focus:ring-blue-500 shrink-0 cursor-pointer"
+                        value={a.attendanceStatus || (a.rsvp === 'DECLINED' ? 'ABSENT' : 'PRESENT')}
+                        onChange={(e) => updateAttendanceMutation.mutate({ attendeeId: a.id, attendanceStatus: e.target.value })}
+                        disabled={updateAttendanceMutation.isPending}
+                      >
+                        <option value="PRESENT">Present</option>
+                        <option value="REMOTE">Remote</option>
+                        <option value="LATE">Late</option>
+                        <option value="EXCUSED">Excused</option>
+                        <option value="ABSENT">Absent</option>
+                      </select>
                     </div>
                   ))
                 ) : (
@@ -445,20 +526,23 @@ export default function MeetingOverviewPage({ params }: { params: Promise<{ meet
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-slate-800 mb-3">Apologies</h4>
-              <div className="bg-slate-100 rounded p-2 text-sm text-slate-400 min-h-[48px] flex flex-col justify-center">
-                {meeting.attendees?.filter((a: any) => a.rsvp === 'DECLINED').length > 0 ? (
-                  meeting.attendees.filter((a: any) => a.rsvp === 'DECLINED').map((a: any) => (
-                    <div key={a.id} className="text-slate-600 text-sm py-0.5">{a.user.name}</div>
+              <h4 className="text-sm font-semibold text-slate-800 mb-3">Apologies / Absent</h4>
+              <div className="bg-slate-100 rounded p-2 text-sm text-slate-400 min-h-[48px] flex flex-col justify-start space-y-1">
+                {meeting.attendees?.filter((a: any) => a.attendanceStatus === 'EXCUSED' || a.attendanceStatus === 'ABSENT' || a.rsvp === 'DECLINED').length > 0 ? (
+                  meeting.attendees.filter((a: any) => a.attendanceStatus === 'EXCUSED' || a.attendanceStatus === 'ABSENT' || a.rsvp === 'DECLINED').map((a: any) => (
+                    <div key={a.id} className="text-slate-700 text-xs py-1 px-2 bg-white rounded border border-slate-200 flex justify-between items-center">
+                      <span>{a.user.name}</span>
+                      <span className="text-[10px] uppercase font-semibold text-slate-500">{a.attendanceStatus || 'DECLINED'}</span>
+                    </div>
                   ))
                 ) : (
-                  <span className="italic text-xs">No apologies yet.</span>
+                  <span className="italic text-xs text-slate-400 p-2">No apologies or absences recorded.</span>
                 )}
               </div>
             </div>
           </div>
           <p className="text-xs text-slate-500 mt-3">
-            Attendees who decline will appear in the Apologies column.
+            Change participation status using the dropdown above to update the Quorum calculations in real-time.
           </p>
           <div className="flex items-center gap-3 mt-4">
             <Button onClick={() => setIsAddAttendeeOpen(true)} variant="outline" className="h-8 px-4 text-xs font-medium text-slate-600">

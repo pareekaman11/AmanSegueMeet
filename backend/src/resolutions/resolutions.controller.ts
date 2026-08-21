@@ -39,4 +39,16 @@ export class ResolutionsController {
     return this.resolutionsService.createResolution(dto, user);
   }
 
+  @Post(':id/vote')
+  castVote(
+    @Param('id') id: string,
+    @Body() body: { status?: VoteStatus; vote?: VoteStatus },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const voteStatus = body.status || body.vote;
+    if (!voteStatus) {
+      throw new BadRequestException('status or vote is required (IN_FAVOUR, AGAINST, ABSTAIN)');
+    }
+    return this.resolutionsService.castVote(id, voteStatus, user);
+  }
 }

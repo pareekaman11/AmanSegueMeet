@@ -1,80 +1,74 @@
 "use client";
 
-// Icons replaced with emojis for simplicity
-import Image from "next/image";
+import { Calendar, FileText, CheckCircle2, Package, Vote } from "lucide-react";
 
 const steps = [
   {
-    number: 1,
-    title: "Create a Meeting",
-    description: "Pick date, time and location in seconds.",
-    icon: "📅", // calendar emoji
-    // placeholder image url
-    img: "/images/create_meeting.jpg",
+    number: "01",
+    title: "Schedule & Prepare Agendas",
+    description: "Create meeting instances, select templates, allocate timed sections, and attach committee documents.",
+    icon: Calendar,
   },
   {
-    number: 2,
-    title: "Build Your Agenda",
-    description: "Use ready‑made templates or craft a custom agenda.",
-    icon: "✏️", // edit emoji
-    img: "/images/build_agenda.jpg",
+    number: "02",
+    title: "Compile & Distribute Board Packs",
+    description: "One-click merge into an indexed, paginated executive PDF for member review.",
+    icon: Package,
   },
   {
-    number: 3,
-    title: "Take Minutes",
-    description: "Record decisions, attendees and action items live.",
-    icon: "✅", // check circle emoji
-    img: "/images/take_minutes.jpg",
+    number: "03",
+    title: "Execute Live Minuting & Record Votes",
+    description: "Track attendance, log conflicts of interest, record motions, and tally member ballots live.",
+    icon: Vote,
   },
   {
-    number: 4,
-    title: "Track Actions",
-    description: "Assign owners, set due dates, watch progress.",
-    icon: "⏰", // clock emoji
-    img: "/images/track_actions.jpg",
-  },
-  {
-    number: 5,
-    title: "Generate Board Pack",
-    description: "Export a polished PDF for stakeholders.",
-    icon: "📁", // export emoji
-    img: "/images/build_agenda.jpg",
+    number: "04",
+    title: "Track Actions & Audit Directives",
+    description: "Assign action items to owners with clear due dates, and capture dual digital signatures on confirmed minutes.",
+    icon: CheckCircle2,
   },
 ];
 
 export default function LandingHowItWorks() {
   return (
-    <section id="how-it-works" className="py-20 bg-white">
+    <section id="how-it-works" className="py-24 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-12">
-          How It Works
-        </h2>
-        <div className="space-y-12">
-          {steps.map((step) => (
-            <div
-              key={step.number}
-              className="flex flex-col md:flex-row items-center md:items-start"
-            >
-              <div className="flex-shrink-0 w-16 h-16 md:w-24 md:h-24 flex items-center justify-center bg-teal-100 rounded-full mb-4 md:mb-0">
-                {step.icon}
-              </div>
-              <div className="md:ml-8">
-                <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                  {step.number}. {step.title}
-                </h3>
-                <p className="text-gray-600 mb-4">{step.description}</p>
-                <div className="w-full max-w-md">
-                  <Image
-                    src={step.img}
-                    alt={step.title}
-                    width={800}
-                    height={400}
-                    className="rounded-lg shadow-lg"
-                  />
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+            Governance Flow
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            Structured workflow from agenda to execution
+          </h2>
+        </div>
+
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={step.number}
+                className="bg-card text-card-foreground border border-border rounded-xl p-6 shadow-sm flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-muted-foreground bg-muted px-2.5 py-0.5 rounded">
+                      Step {step.number}
+                    </span>
+                    <div className="w-8 h-8 rounded-lg bg-muted text-foreground flex items-center justify-center">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h3 className="text-base font-bold text-card-foreground mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    {step.description}
+                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

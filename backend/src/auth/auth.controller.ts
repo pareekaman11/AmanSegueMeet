@@ -24,7 +24,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -60,11 +60,22 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.authService.login(dto, req);
   }
 
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  resendVerification(@Body('email') email: string) {
+    return this.authService.resendVerification(email);
+  }
 
+  @Get('verify')
+  verify(@Req() req: Request) {
+    const token = req.query.token as string;
+    return this.authService.verifyEmail(token);
+  }
 
   /**
    * POST /auth/logout
@@ -79,10 +90,49 @@ export class AuthController {
     if (token) {
       const decoded = this.jwtService.decode(token) as any;
       if (decoded && decoded.jti && decoded.exp) {
-        return this.authService.logout(decoded.jti, decoded.exp);
+        return this.authService.logout(decoded.jti, decoded.exp, decoded.sub);
       }
     }
     return this.authService.logout();
+  }
+
+  /**
+   * GET /auth/sessions
+   *
+   * List active sessions for the current user.
+   */
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  getSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getUserSessions(user.id, user.currentJti);
+  }
+
+  /**
+   * DELETE /auth/sessions/:id
+   *
+   * Revoke a specific active session.
+   */
+  @Post('sessions/:id/revoke')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  revokeSession(
+    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const sessionId = (req.params as any)?.id;
+    return this.authService.revokeSession(user.id, sessionId);
+  }
+
+  /**
+   * POST /auth/sessions/revoke-others
+   *
+   * Revoke all active sessions except the current one.
+   */
+  @Post('sessions/revoke-others')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  revokeAllOtherSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.revokeAllOtherSessions(user.id, user.currentJti);
   }
 
   /**
@@ -120,8 +170,19 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.authService.changePassword(user, dto);
   }
 
   /**

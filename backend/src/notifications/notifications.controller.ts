@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -10,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
@@ -27,6 +29,30 @@ import type { AuthenticatedUser } from '../auth/auth.types';
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
+
+  /**
+   * GET /notifications/preferences
+   *
+   * Returns the current user's notification preferences.
+   */
+  @Get('preferences')
+  getPreferences(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.getPreferences(user.id);
+  }
+
+  /**
+   * PATCH /notifications/preferences
+   *
+   * Updates the current user's notification preferences.
+   */
+  @Patch('preferences')
+  @HttpCode(HttpStatus.OK)
+  updatePreferences(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateNotificationPreferencesDto,
+  ) {
+    return this.notificationsService.updatePreferences(user.id, dto);
+  }
 
   /**
    * PATCH /notifications/read-all

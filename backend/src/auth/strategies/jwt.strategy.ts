@@ -31,19 +31,53 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    if (payload.jti && this.tokenBlocklistService.isTokenRevoked(payload.jti)) {
-      throw new UnauthorizedException('Token has been revoked');
+    if (payload.jti) {
+      if (this.tokenBlocklistService.isTokenRevoked(payload.jti)) {
+        throw new UnauthorizedException('Token has been revoked');
+      }
+
+      // Verify session revocation in database if delegate is available
+      if ((this.prisma as any).userSession?.findUnique) {
+        try {
+          const session = await (this.prisma as any).userSession.findUnique({
+            where: { jti: payload.jti },
+            select: { isRevoked: true, expiresAt: true },
+          });
+
+          if (session?.isRevoked) {
+            this.tokenBlocklistService.revokeToken(payload.jti, Math.floor(session.expiresAt.getTime() / 1000));
+            throw new UnauthorizedException('Session has been revoked');
+          }
+        } catch (err) {
+          if (err instanceof UnauthorizedException) throw err;
+        }
+      }
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: SAFE_USER_SELECT,
+      select: {
+        ...SAFE_USER_SELECT,
+        lastPasswordResetAt: true,
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('Token is no longer valid');
     }
 
-    return user;
+    if (user.lastPasswordResetAt && payload.iat) {
+      const issuedAtDate = new Date(payload.iat * 1000);
+      if (issuedAtDate < user.lastPasswordResetAt) {
+        throw new UnauthorizedException('Token has been revoked due to a password reset');
+      }
+    }
+
+    // Omit lastPasswordResetAt from the returned user object
+    const { lastPasswordResetAt, ...safeUser } = user;
+    return {
+      ...safeUser,
+      currentJti: payload.jti,
+    } as AuthenticatedUser;
   }
 }

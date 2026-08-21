@@ -39,6 +39,26 @@ export class AuditService {
   }
 
   /**
+   * Logs a global system event (e.g. auth lifecycle).
+   */
+  async logSystemEvent(action: string, description: string, payload?: object) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          organisationId: 'SYSTEM_AUTH',
+          actorId: (payload as any)?.userId || null,
+          action,
+          entityType: 'System',
+          entityId: 'Auth',
+          payload: { description, ...payload } as any,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to log system event: ${action}`, err);
+    }
+  }
+
+  /**
    * Logs an audit event asynchronously. Never throws, even on failure.
    */
   async log(params: {

@@ -68,8 +68,8 @@ export default function MeetingsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Meetings for {user?.memberships?.[0]?.organisation?.name || "Organisation"}</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight break-words">Meetings for {user?.memberships?.[0]?.organisation?.name || "Organisation"}</h1>
         {orgId && (
           <AddMeetingModal 
             organisationId={orgId} 

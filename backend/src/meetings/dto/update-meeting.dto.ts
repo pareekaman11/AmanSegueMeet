@@ -33,6 +33,10 @@ export class UpdateMeetingDto {
   location?: string;
 
   @IsOptional()
+  @IsUUID()
+  locationId?: string;
+
+  @IsOptional()
   @IsString()
   videoLink?: string;
 
@@ -67,4 +71,7 @@ export class UpdateMeetingDto {
   @IsOptional()
   @IsBoolean()
   committeeVisible?: boolean;
+
+  @IsOptional()
+  requiredQuorum?: number;
 }

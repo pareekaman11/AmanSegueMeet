@@ -28,9 +28,12 @@ export default function PeoplePage() {
   const [editingMember, setEditingMember] = useState<any>(null);
   const [isAccessLevelsOpen, setIsAccessLevelsOpen] = useState(false);
 
-  const { user } = useAuth();
-  const orgId = user?.memberships?.[0]?.organisationId || user?.memberships?.[0]?.organisation?.id;
-  const userRole = user?.memberships?.[0]?.role;
+  const { user, activeOrgId } = useAuth();
+  
+  // Reliably get the active membership instead of blindly using index 0
+  const activeMembership = user?.memberships?.find(m => m.organisationId === activeOrgId) || user?.memberships?.[0];
+  const orgId = activeMembership?.organisationId || activeMembership?.organisation?.id;
+  const userRole = activeMembership?.role;
   const canManagePeople = ["BOARD_ADMIN", "CHAIR", "SECRETARY"].includes(userRole || "");
 
   const { data: orgData } = useQuery({
@@ -71,65 +74,67 @@ export default function PeoplePage() {
 
   const renderPeopleList = (people: any[]) => {
     return (
-      <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-slate-500 border-b">
-            <tr>
-              <th className="px-6 py-4 font-medium">Name</th>
-              <th className="px-6 py-4 font-medium">Designation</th>
-              <th className="px-6 py-4 font-medium">Roles</th>
-              <th className="px-6 py-4 font-medium">Email</th>
-              <th className="px-6 py-4 font-medium">Status</th>
-              <th className="px-6 py-4 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {people.map((person: any) => (
-              <tr key={person.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                    {person.user.name.charAt(0).toUpperCase()}
-                  </div>
-                  {person.user.name}
-                </td>
-                <td className="px-6 py-4 text-slate-600">
-                  {person.designation || <span className="text-slate-400 italic">None</span>}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-1 bg-gray-100 text-slate-600 rounded-md text-xs font-medium">
-                      {person.role.replace('_', ' ')}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-slate-500">{person.user.email}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center w-fit gap-1.5 bg-green-100 text-green-700`}>
-                    <CheckCircle2 className="w-3 h-3" />
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <Button variant="ghost" size="sm" onClick={() => setEditingMember(person)} className="text-slate-500 hover:text-blue-600">
-                    Edit
-                  </Button>
-                </td>
+      <div className="border rounded-xl bg-white shadow-sm w-full">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-sm text-left min-w-[600px]">
+            <thead className="bg-gray-50 text-slate-500 border-b">
+              <tr>
+                <th className="px-6 py-4 font-medium">Name</th>
+                <th className="px-6 py-4 font-medium">Designation</th>
+                <th className="px-6 py-4 font-medium">Roles</th>
+                <th className="px-6 py-4 font-medium">Email</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {people.map((person: any) => (
+                <tr key={person.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
+                      {person.user.name.charAt(0).toUpperCase()}
+                    </div>
+                    {person.user.name}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">
+                    {person.designation || <span className="text-slate-400 italic">None</span>}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2 py-1 bg-gray-100 text-slate-600 rounded-md text-xs font-medium">
+                        {person.role.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-slate-500">{person.user.email}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center w-fit gap-1.5 bg-green-100 text-green-700`}>
+                      <CheckCircle2 className="w-3 h-3" />
+                      Active
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <Button variant="ghost" size="sm" onClick={() => setEditingMember(person)} className="text-slate-500 hover:text-blue-600">
+                      Edit
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold flex items-baseline gap-2 text-slate-800">
             People 
-            <span className="text-sm font-normal text-muted-foreground ml-2">
+            <span className="text-sm font-normal text-muted-foreground ml-2 hidden sm:inline-block">
               Manage and view your Board and Team
             </span>
           </h1>

@@ -22,6 +22,8 @@ import { InterestsModule } from './interests/interests.module';
 import { MailModule } from './mail/mail.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { VotesModule } from './votes/votes.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { SupportModule } from './support/support.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -109,6 +111,12 @@ import { GlobalThrottlerGuard } from './common/guards/global-throttler.guard';
 
     /** Votes — Meeting voting management */
     VotesModule,
+
+    /** Feedback — Product feedback submission */
+    FeedbackModule,
+
+    /** Support — User support requests and issue reporting */
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [

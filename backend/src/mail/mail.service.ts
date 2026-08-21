@@ -47,6 +47,33 @@ export class MailService {
     }
   }
 
+  async sendCommitteeMemberAddedEmail(to: string, recipientName: string, committeeName: string, role: string, actorName: string) {
+    try {
+      const loginUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      
+      const htmlContent = `
+        <h2>Hello ${recipientName},</h2>
+        <p><strong>${actorName}</strong> has added you to the <strong>${committeeName}</strong> committee on SegueMeet.</p>
+        <p><strong>Role:</strong> ${role}</p>
+        <br/>
+        <p>Please log in to your dashboard to view the committee: <a href="${loginUrl}">${loginUrl}</a></p>
+      `;
+
+      const info = await this.transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to,
+        subject: `You have been added to the ${committeeName} committee`,
+        html: htmlContent,
+      });
+
+      this.logger.log(`Committee member added email sent to ${to} (ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
+      this.logger.error(`Failed to send committee member added email to ${to}: ${error.message}`);
+      return { success: false, error };
+    }
+  }
+
   private parseLocalTime(dateStr: string, timeStr: string): Date {
     const [year, month, day] = dateStr.split('-').map(Number);
     const [hour, minute] = timeStr.split(':').map(Number);
@@ -122,6 +149,37 @@ export class MailService {
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
       this.logger.error(`Failed to send meeting invite email to ${to}: ${error.message}`);
+      return { success: false, error };
+    }
+  }
+
+  async sendVerificationEmail(to: string, token: string) {
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+      
+      const htmlContent = `
+        <h2>Verify your email for SegueMeet</h2>
+        <p>Thank you for registering. Please click the link below to verify your email address. This link is valid for 24 hours.</p>
+        <br/>
+        <a href="${verifyUrl}" style="padding: 10px 15px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px;">Verify your email</a>
+        <br/><br/>
+        <p>If you did not register for an account, please ignore this email.</p>
+        <br/>
+        <p>Thanks,<br/>The SegueMeet Team</p>
+      `;
+
+      const info = await this.transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to,
+        subject: 'Verify your SegueMeet account',
+        html: htmlContent,
+      });
+
+      this.logger.log(`Verification email sent to ${to} (ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
+      this.logger.error(`Failed to send verification email to ${to}: ${error.message}`);
       return { success: false, error };
     }
   }
@@ -272,4 +330,6 @@ export class MailService {
       return { success: false, error };
     }
   }
+
+
 }

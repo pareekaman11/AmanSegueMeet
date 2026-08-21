@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -19,6 +20,7 @@ import { CreateOrganisationDto } from './dto/create-organisation.dto';
 import { UpdateOrganisationDto } from './dto/update-organisation.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 /**
  * All routes in this controller require a valid JWT Bearer token.
@@ -165,8 +167,16 @@ export class OrganisationsController {
   // ─────────────────────────────────────────────
 
   @Get(':id/locations')
-  getLocations(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.organisationsService.getLocations(id, user);
+  getLocations(
+    @Param('id') id: string,
+    @Query('activeOnly') activeOnly: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.organisationsService.getLocations(
+      id,
+      user,
+      activeOnly === 'true' || activeOnly === '1',
+    );
   }
 
   @Post(':id/locations')
@@ -177,5 +187,26 @@ export class OrganisationsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.organisationsService.createLocation(id, dto, user);
+  }
+
+  @Patch(':id/locations/:locationId')
+  @HttpCode(HttpStatus.OK)
+  updateLocation(
+    @Param('id') id: string,
+    @Param('locationId') locationId: string,
+    @Body() dto: UpdateLocationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.organisationsService.updateLocation(id, locationId, dto, user);
+  }
+
+  @Delete(':id/locations/:locationId')
+  @HttpCode(HttpStatus.OK)
+  deleteLocation(
+    @Param('id') id: string,
+    @Param('locationId') locationId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.organisationsService.deleteLocation(id, locationId, user);
   }
 }

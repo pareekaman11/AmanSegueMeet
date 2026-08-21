@@ -18,6 +18,7 @@ import { MeetingsService } from './meetings.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { QueryMeetingsDto } from './dto/query-meetings.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
@@ -54,6 +55,14 @@ export class MeetingsController {
     return this.meetingsService.getMeetingById(id, user);
   }
 
+  @Get(':id/quorum')
+  getQuorum(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.meetingsService.getQuorumAndParticipation(id, user);
+  }
+
   @Patch(':id')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   update(
@@ -82,6 +91,23 @@ export class MeetingsController {
     return this.meetingsService.addAttendee(id, userId, user);
   }
 
+  @Patch(':id/attendees/:attendeeId/attendance')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  updateAttendance(
+    @Param('id') id: string,
+    @Param('attendeeId') attendeeId: string,
+    @Body() updateAttendanceDto: UpdateAttendanceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.meetingsService.updateAttendeeAttendance(
+      id,
+      attendeeId,
+      updateAttendanceDto,
+      user,
+    );
+  }
+
   @Get(':id/notice/pdf')
   @Header('Content-Type', 'application/pdf')
   generateNoticePdf(
@@ -91,3 +117,4 @@ export class MeetingsController {
     return this.meetingsService.generateNoticePdf(id, user);
   }
 }
+

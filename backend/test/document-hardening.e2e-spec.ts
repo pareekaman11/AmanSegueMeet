@@ -22,7 +22,7 @@ describe('Cloud Storage & File Hardening (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider(MailService)
-      .useValue({ sendMemberAddedEmail: jest.fn().mockResolvedValue(true) })
+      .useValue({ sendMemberAddedEmail: jest.fn().mockResolvedValue(true), sendVerificationEmail: jest.fn().mockResolvedValue(true), sendPasswordResetEmail: jest.fn().mockResolvedValue(true) })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -38,10 +38,13 @@ describe('Cloud Storage & File Hardening (e2e)', () => {
         name: 'User A',
         email: `docA-${Date.now()}@example.com`,
         password: 'Password123!',
+          passwordConfirmation: 'Password123!',
         organisationName: 'Org A',
       });
-    accessToken = resA.body.accessToken;
-    orgId = resA.body.organisation.id;
+    await prisma.user.update({ where: { id: resA.body.user.id }, data: { isEmailVerified: true } });
+      const loginResA = await request(app.getHttpServer()).post('/auth/login').send({ email: resA.body.user.email, password: 'Password123!' });
+      accessToken = loginResA.body.accessToken;
+    orgId = resA.body.user.memberships[0].organisation.id;
     userAId = resA.body.user.id;
 
     // Register User B & Org B
@@ -51,10 +54,13 @@ describe('Cloud Storage & File Hardening (e2e)', () => {
         name: 'User B',
         email: `docB-${Date.now()}@example.com`,
         password: 'Password123!',
+          passwordConfirmation: 'Password123!',
         organisationName: 'Org B',
       });
-    userBToken = resB.body.accessToken;
-    orgBId = resB.body.organisation.id;
+    await prisma.user.update({ where: { id: resB.body.user.id }, data: { isEmailVerified: true } });
+      const loginResB = await request(app.getHttpServer()).post('/auth/login').send({ email: resB.body.user.email, password: 'Password123!' });
+      userBToken = loginResB.body.accessToken;
+    orgBId = resB.body.user.memberships[0].organisationId;
     userBId = resB.body.user.id;
   });
 

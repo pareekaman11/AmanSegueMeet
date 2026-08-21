@@ -48,8 +48,8 @@ export function InterestsRegisterTab({ organisationId }: InterestsRegisterTabPro
   return (
     <div className="space-y-6">
       {/* Filters row */}
-      <div className="flex items-center gap-4 py-2 border-b">
-        <div className="flex border rounded-md overflow-hidden bg-white shadow-sm p-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-2 border-b">
+        <div className="flex border rounded-md overflow-hidden bg-white shadow-sm p-1 w-full sm:w-auto">
           <button 
             onClick={() => setFilter("current")}
             className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
@@ -107,8 +107,9 @@ export function InterestsRegisterTab({ organisationId }: InterestsRegisterTabPro
           Sorry, No results!
         </div>
       ) : (
-        <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
-          <table className="w-full text-sm text-left">
+        <div className="border rounded-xl bg-white shadow-sm w-full">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm text-left min-w-[600px]">
             <thead className="bg-gray-50 text-slate-500 border-b">
               <tr>
                 <th className="px-6 py-4 font-medium">Person</th>
@@ -130,8 +131,9 @@ export function InterestsRegisterTab({ organisationId }: InterestsRegisterTabPro
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

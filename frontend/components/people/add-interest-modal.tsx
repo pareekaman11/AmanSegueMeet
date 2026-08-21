@@ -60,7 +60,7 @@ export function AddInterestModal({ organisationId, members, isOpen, onOpenChange
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between">
+        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between pr-10">
           <div className="flex items-center gap-3">
             <div className="bg-emerald-100 p-1.5 rounded-md text-emerald-600">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -69,9 +69,6 @@ export function AddInterestModal({ organisationId, members, isOpen, onOpenChange
             </div>
             <DialogTitle className="text-lg">Add a new interest</DialogTitle>
           </div>
-          <button onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-slate-600">
-            <X className="w-5 h-5" />
-          </button>
         </DialogHeader>
 
         <div className="p-6 space-y-6">

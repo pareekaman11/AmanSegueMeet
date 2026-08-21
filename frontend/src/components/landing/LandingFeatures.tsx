@@ -1,58 +1,83 @@
 "use client";
 
-// Icons replaced with emojis for simplicity
+import { 
+  CalendarDays, 
+  FileText, 
+  CheckSquare, 
+  FolderLock, 
+  ShieldCheck, 
+  Package, 
+  Vote, 
+  Users2 
+} from "lucide-react";
 
 const features = [
   {
-    icon: <span className="text-3xl" role="img" aria-label="Agenda">🗂️</span>,
-    title: "Agenda Builder",
-    description: "Create structured agendas with ready‑made templates or from scratch.",
+    icon: CalendarDays,
+    title: "Timed Agenda Builder",
+    description: "Structure timed sections and items tagged for noting, decision, or discussion with reusable governance templates.",
   },
   {
-    icon: <span className="text-3xl" role="img" aria-label="Minutes">📝</span>,
-    title: "Minutes & Notes",
-    description: "Capture decisions, action items and attendees in a clean editor.",
+    icon: FileText,
+    title: "Live Minutes & Attendance",
+    description: "Record attendance registers, attendee status, discussion points, and dual digital signature confirmations.",
   },
   {
-    icon: <span className="text-3xl" role="img" aria-label="Tracking">📊</span>,
-    title: "Action Tracking",
-    description: "Assign, monitor and close action items in real time.",
+    icon: CheckSquare,
+    title: "Action Item Tracking",
+    description: "Assign responsible directors, track ISO due dates, monitor progress, and close items in real time.",
   },
   {
-    icon: <span className="text-3xl" role="img" aria-label="Documents">📁</span>,
-    title: "Document Management",
-    description: "Organise, share and version meeting documents.",
+    icon: Package,
+    title: "Consolidated Board Packs",
+    description: "Generate single-file PDF board packs with automated table of contents, pagination, and secure distribution.",
   },
   {
-    icon: <span className="text-3xl" role="img" aria-label="Audit">✅</span>,
-    title: "Audit Trail",
-    description: "Full, immutable record of every change and decision.",
+    icon: Vote,
+    title: "Decisions & Circular Resolutions",
+    description: "Execute formal in-session votes or out-of-session circular approvals with live quorum metrics.",
   },
   {
-    icon: <span className="text-3xl" role="img" aria-label="Export">📦</span>,
-    title: "Board Pack Export",
-    description: "Generate professional PDF packs for distribution.",
+    icon: ShieldCheck,
+    title: "Immutable Audit Trail",
+    description: "Maintain complete non-repudiation with snapshot logging of every vote, minute change, and agenda modification.",
   },
 ];
 
 export default function LandingFeatures() {
   return (
-    <section id="features" className="py-20 bg-gray-50">
+    <section id="features" className="py-24 bg-muted/40 border-b border-border">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-12">
-          Powerful Features
-        </h2>
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center text-center"
-            >
-              <div className="mb-4">{f.icon}</div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">{f.title}</h3>
-              <p className="text-gray-600">{f.description}</p>
-            </div>
-          ))}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+            Platform Capabilities
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            Everything required for rigorous board governance
+          </h2>
+          <p className="text-muted-foreground text-sm mt-3">
+            Designed specifically for Corporate Secretaries, Chairs, and Non-Executive Directors.
+          </p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f, idx) => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={idx}
+                className="bg-card text-card-foreground border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-10 h-10 rounded-lg bg-muted text-foreground flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-card-foreground mb-2">{f.title}</h3>
+                  <p className="text-muted-foreground text-xs leading-relaxed">{f.description}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

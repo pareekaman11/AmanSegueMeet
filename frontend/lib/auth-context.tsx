@@ -30,6 +30,7 @@ interface AuthContextValue {
   login: (token: string, user: AuthenticatedUser) => void;
   logout: () => void;
   setActiveOrgId: (id: string) => void;
+  activeOrgId: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextValue>({
   login: () => {},
   logout: () => {},
   setActiveOrgId: () => {},
+  activeOrgId: null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -115,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: derivedUser, isLoading, login, logout, setActiveOrgId }}>
+    <AuthContext.Provider value={{ user: derivedUser, isLoading, login, logout, setActiveOrgId, activeOrgId }}>
       {children}
     </AuthContext.Provider>
   );

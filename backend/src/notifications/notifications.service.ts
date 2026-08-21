@@ -10,6 +10,7 @@ import { OrganisationsService } from '../organisations/organisations.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { NotificationType } from '@prisma/client';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -19,6 +20,79 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly organisationsService: OrganisationsService,
   ) {}
+
+  // ─────────────────────────────────────────────
+  // PREFERENCES
+  // ─────────────────────────────────────────────
+
+  async getPreferences(userId: string) {
+    if (!(this.prisma as any).userNotificationPreference?.findUnique) {
+      return {
+        userId,
+        inAppEnabled: true,
+        emailEnabled: true,
+        meetingCreated: true,
+        meetingUpdated: true,
+        meetingCancelled: true,
+        agendaPublished: true,
+        minutesConfirmed: true,
+        actionItemAssigned: true,
+        documentUploaded: true,
+        tenureExpiring: true,
+      };
+    }
+
+    try {
+      let pref = await (this.prisma as any).userNotificationPreference.findUnique({
+        where: { userId },
+      });
+
+      if (!pref) {
+        pref = await (this.prisma as any).userNotificationPreference.create({
+          data: { userId },
+        });
+      }
+
+      return pref;
+    } catch (err) {
+      this.logger.warn(`Failed to fetch notification preferences for user ${userId}`, err);
+      return {
+        userId,
+        inAppEnabled: true,
+        emailEnabled: true,
+        meetingCreated: true,
+        meetingUpdated: true,
+        meetingCancelled: true,
+        agendaPublished: true,
+        minutesConfirmed: true,
+        actionItemAssigned: true,
+        documentUploaded: true,
+        tenureExpiring: true,
+      };
+    }
+  }
+
+  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
+    if (!(this.prisma as any).userNotificationPreference?.upsert) {
+      return { userId, ...dto };
+    }
+
+    try {
+      return await (this.prisma as any).userNotificationPreference.upsert({
+        where: { userId },
+        create: {
+          userId,
+          ...dto,
+        },
+        update: {
+          ...dto,
+        },
+      });
+    } catch (err) {
+      this.logger.error(`Failed to update notification preferences for user ${userId}`, err);
+      throw new InternalServerErrorException('Failed to update notification preferences');
+    }
+  }
 
   // ─────────────────────────────────────────────
   // PRIVATE HELPERS
@@ -53,6 +127,7 @@ export class NotificationsService {
   /**
    * Internal helper to create a notification. Not exposed via API.
    * Called by other services (e.g., MeetingsService, MinutesService) when events occur.
+   * Enforces server-side recipient preferences before creating the record.
    */
   async createNotification(data: {
     organisationId: string;
@@ -64,6 +139,27 @@ export class NotificationsService {
     entityId?: string;
   }) {
     try {
+      // Check recipient preferences
+      const pref = await this.getPreferences(data.recipientId);
+
+      // If user disabled in-app delivery entirely, skip
+      if (pref && pref.inAppEnabled === false) {
+        this.logger.debug(`Skipping in-app notification for ${data.recipientId} (in-app notifications disabled)`);
+        return null;
+      }
+
+      // Check specific notification type preference
+      if (pref) {
+        if (data.type === NotificationType.MEETING_CREATED && pref.meetingCreated === false) return null;
+        if (data.type === NotificationType.MEETING_UPDATED && pref.meetingUpdated === false) return null;
+        if (data.type === NotificationType.MEETING_CANCELLED && pref.meetingCancelled === false) return null;
+        if (data.type === NotificationType.AGENDA_PUBLISHED && pref.agendaPublished === false) return null;
+        if (data.type === NotificationType.MINUTES_CONFIRMED && pref.minutesConfirmed === false) return null;
+        if (data.type === NotificationType.ACTION_ITEM_ASSIGNED && pref.actionItemAssigned === false) return null;
+        if (data.type === NotificationType.DOCUMENT_UPLOADED && pref.documentUploaded === false) return null;
+        if (data.type === NotificationType.TENURE_EXPIRING && pref.tenureExpiring === false) return null;
+      }
+
       return await this.prisma.notification.create({
         data,
       });

@@ -116,23 +116,23 @@ export default function DebugPanel() {
 
   return (
     <div
-      className="fixed bottom-4 right-4 w-[500px] h-[600px] bg-gray-900/85 backdrop-blur-md border border-gray-700/50 rounded-lg shadow-lg z-50 flex flex-col pointer-events-auto"
+      className="fixed bottom-4 right-4 w-[280px] h-[260px] bg-gray-900/90 backdrop-blur-md border border-gray-700/60 rounded-lg shadow-2xl z-50 flex flex-col pointer-events-auto text-[11px]"
       style={{ left: pos.x, top: pos.y }}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between p-2 cursor-move bg-gray-800/70 text-gray-200 rounded-t-lg"
+        className="flex items-center justify-between px-2 py-1 cursor-move bg-gray-800/80 text-gray-200 rounded-t-lg select-none border-b border-gray-700/50"
         onMouseDown={onMouseDown}
       >
-        <span className="font-mono text-sm">Debug Panel</span>
-        <div className="flex gap-2">
-          <button onClick={() => setIsMinimized(true)} title="Minimize (Ctrl+Shift+M)" className="text-gray-300 hover:text-white">
-            <ChevronDown size={16} />
+        <span className="font-mono text-xs font-semibold text-gray-300">🐞 Debug</span>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setIsMinimized(true)} title="Minimize (Ctrl+Shift+M)" className="text-gray-400 hover:text-white p-0.5">
+            <ChevronDown size={13} />
           </button>
-          <button onClick={() => setLogs([])} title="Clear (Ctrl+Shift+C)" className="text-gray-300 hover:text-white">
-            <Trash2 size={16} />
+          <button onClick={() => setLogs([])} title="Clear (Ctrl+Shift+C)" className="text-gray-400 hover:text-white p-0.5">
+            <Trash2 size={13} />
           </button>
           <button
             onClick={() => {
@@ -140,33 +140,34 @@ export default function DebugPanel() {
               downloadTxt(`debug-${Date.now()}.txt`, txt);
             }}
             title="Export (Ctrl+Shift+E)"
-            className="text-gray-300 hover:text-white"
+            className="text-gray-400 hover:text-white p-0.5"
           >
-            <Download size={16} />
+            <Download size={13} />
           </button>
-          <button onClick={() => setIsOpen(false)} title="Close" className="text-gray-300 hover:text-white">
-            <X size={16} />
+          <button onClick={() => setIsOpen(false)} title="Close" className="text-gray-400 hover:text-white p-0.5">
+            <X size={13} />
           </button>
         </div>
       </div>
       {/* Controls */}
-      <div className="p-2 flex flex-col gap-2 bg-gray-800/60 text-gray-200">
+      <div className="px-2 py-1 flex flex-col gap-1 bg-gray-800/50 text-gray-200 border-b border-gray-700/40">
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Filter logs..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="w-full px-2 py-1 rounded bg-gray-700 text-gray-100 text-sm focus:outline-none"
+          className="w-full px-1.5 py-0.5 rounded bg-gray-700/80 text-gray-100 text-[10px] focus:outline-none placeholder-gray-400"
         />
-        <div className="flex gap-2 text-xs">
+        <div className="flex items-center gap-2 text-[9px]">
           {(['INFO', 'WARN', 'ERROR', 'DEBUG'] as const).map((lvl) => (
-            <label key={lvl} className="flex items-center gap-1">
+            <label key={lvl} className="flex items-center gap-0.5 cursor-pointer">
               <input
                 type="checkbox"
+                className="w-2.5 h-2.5"
                 checked={levelFilter[lvl]}
                 onChange={() => setLevelFilter((prev) => ({ ...prev, [lvl]: !prev[lvl] }))}
               />
-              <span className={lvl === 'ERROR' ? 'text-red-400' : lvl === 'WARN' ? 'text-yellow-300' : lvl === 'DEBUG' ? 'text-blue-300' : 'text-gray-300'}>
+              <span className={lvl === 'ERROR' ? 'text-red-400 font-semibold' : lvl === 'WARN' ? 'text-yellow-300' : lvl === 'DEBUG' ? 'text-blue-300' : 'text-gray-300'}>
                 {lvl}
               </span>
             </label>
@@ -174,13 +175,13 @@ export default function DebugPanel() {
         </div>
       </div>
       {/* Log list */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-2 font-mono text-xs space-y-1">
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-1.5 font-mono text-[10px] space-y-0.5 leading-tight">
         {displayed.map((log) => (
-          <div key={log.id} className={log.level === 'ERROR' ? 'text-red-400' : log.level === 'WARN' ? 'text-yellow-300' : log.level === 'DEBUG' ? 'text-blue-300' : 'text-gray-300'}>
-            [{log.timestamp}] [{log.level}] [{log.source}] — {log.message}
+          <div key={log.id} className={`break-words ${log.level === 'ERROR' ? 'text-red-400' : log.level === 'WARN' ? 'text-yellow-300' : log.level === 'DEBUG' ? 'text-blue-300' : 'text-gray-300'}`}>
+            <span className="opacity-60">[{log.timestamp?.slice(11, 19) || log.timestamp}]</span> <span className="font-semibold">[{log.source}]</span> {log.message}
           </div>
         ))}
-        {displayed.length === 0 && <div className="text-gray-500">No logs match the filter.</div>}
+        {displayed.length === 0 && <div className="text-gray-500 italic text-center py-2">No logs match filter.</div>}
       </div>
     </div>
   );

@@ -62,6 +62,12 @@ enum ActionItemStatus {
   OVERDUE
 }
 
+enum MeetingLocationType {
+  IN_PERSON
+  VIRTUAL
+  HYBRID
+}
+
 enum NotificationType {
   MEETING_CREATED
   MEETING_UPDATED
@@ -104,28 +110,77 @@ enum BoardPackStatus {
   ARCHIVED
 }
 
+enum FeedbackType {
+  SUGGESTION
+  FEATURE_REQUEST
+  BUG
+  GENERAL
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  RESOLVED
+  ARCHIVED
+}
+
+enum SupportCategory {
+  ACCOUNT_LOGIN
+  MEETINGS
+  AGENDA
+  BOARD_PACK
+  MINUTES
+  DOCUMENTS
+  NOTIFICATIONS
+  OTHER
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SupportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 // ─────────────────────────────────────────────
 // MODELS
 // ─────────────────────────────────────────────
 
 model User {
-  id                   String    @id @default(uuid())
-  email                String    @unique
-  name                 String
-  mobileNumber         String?
-  title                String?
-  suffix               String?
-  avatarUrl            String?
-  /// Bcrypt-hashed password — set once auth module is built.
-  passwordHash         String?
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  name                   String
+  mobileNumber           String?
+  title                  String?
+  suffix                 String?
+  avatarUrl              String?
+  /// Bcrypt-hashed password
+  passwordHash           String?
+  /// Email verification
+  isEmailVerified        Boolean   @default(false)
+  verificationTokenHash  String?
+  verificationExpires    DateTime?
   /// Token used for password resets
-  resetPasswordToken   String?
+  resetPasswordTokenHash String?
   /// Expiration time for the password reset token
-  resetPasswordExpires DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  resetPasswordExpires   DateTime?
+  /// Timestamp of last password reset for session revocation
+  lastPasswordResetAt    DateTime?
+  /// Failed login attempt tracking and account lockout
+  failedLoginAttempts    Int       @default(0)
+  lockedUntil            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   memberships          OrganisationMember[]
+  sessions             UserSession[]
+  notificationPreferences UserNotificationPreference?
   assignedActionItems  MinutesActionItem[]  @relation("ActionAssignee")
   auditLogs            AuditLog[]
   notifications        Notification[]
@@ -140,8 +195,50 @@ model User {
   uploadedVersions     DocumentVersion[]    @relation("VersionUploader")
   documentAccesses     DocumentAccess[]
   meetingConflicts     MeetingConflict[]
+  submittedFeedbacks   Feedback[]           @relation("FeedbackSubmitter")
+  submittedSupportRequests SupportRequest[] @relation("SupportSubmitter")
+  assignedSupportRequests  SupportRequest[] @relation("SupportAssignee")
 
   @@map("users")
+}
+
+model UserNotificationPreference {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  inAppEnabled       Boolean  @default(true)
+  emailEnabled       Boolean  @default(true)
+  meetingCreated     Boolean  @default(true)
+  meetingUpdated     Boolean  @default(true)
+  meetingCancelled   Boolean  @default(true)
+  agendaPublished    Boolean  @default(true)
+  minutesConfirmed   Boolean  @default(true)
+  actionItemAssigned Boolean  @default(true)
+  documentUploaded   Boolean  @default(true)
+  tenureExpiring     Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_preferences")
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  jti          String   @unique
+  userAgent    String?
+  ipAddress    String?
+  lastActiveAt DateTime @default(now())
+  expiresAt    DateTime
+  isRevoked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jti])
+  @@map("user_sessions")
 }
 
 model Organisation {
@@ -152,34 +249,86 @@ model Organisation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members       OrganisationMember[]
-  meetings      Meeting[]
-  documents     Document[]
-  auditLogs     AuditLog[]
-  notifications Notification[]
-  decisions     Decision[]
-  resolutions   Resolution[]
-  committees    Committee[]
-  annualPlans   AnnualPlan[]
-  interests     Interest[]
-  locations     MeetingLocation[]
-  folders       DocumentFolder[]
-  boardPacks    BoardPack[]
+  members         OrganisationMember[]
+  meetings        Meeting[]
+  documents       Document[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  decisions       Decision[]
+  resolutions     Resolution[]
+  committees      Committee[]
+  annualPlans     AnnualPlan[]
+  interests       Interest[]
+  locations       MeetingLocation[]
+  folders         DocumentFolder[]
+  boardPacks      BoardPack[]
+  feedbacks       Feedback[]
+  supportRequests SupportRequest[]
 
   @@map("organisations")
 }
 
-model MeetingLocation {
-  id             String   @id @default(uuid())
+model Feedback {
+  id             String         @id @default(uuid())
   organisationId String
-  name           String
-  address        String
-  timeZone       String
-  isDefault      Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  submittedById  String
+  type           FeedbackType   @default(GENERAL)
+  message        String
+  pageUrl        String?
+  status         FeedbackStatus @default(NEW)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  submittedBy  User         @relation("FeedbackSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
 
+  @@index([organisationId])
+  @@index([submittedById])
+  @@map("feedbacks")
+}
+
+model SupportRequest {
+  id             String          @id @default(uuid())
+  ticketNumber   String?         /// e.g. "SR-1042"
+  organisationId String
+  submittedById  String
+  category       SupportCategory @default(OTHER)
+  subject        String
+  description    String
+  priority       SupportPriority @default(MEDIUM)
+  status         SupportStatus   @default(OPEN)
+  assignedToId   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  submittedBy  User         @relation("SupportSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("SupportAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([submittedById])
+  @@index([assignedToId])
+  @@map("support_requests")
+}
+
+model MeetingLocation {
+  id             String              @id @default(uuid())
+  organisationId String
+  name           String
+  type           MeetingLocationType @default(IN_PERSON)
+  address        String?
+  meetingUrl     String?
+  description    String?
+  timeZone       String?
+  isDefault      Boolean             @default(false)
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  meetings     Meeting[]
+
+  @@unique([organisationId, name])
   @@index([organisationId])
   @@map("meeting_locations")
 }
@@ -228,6 +377,7 @@ model Meeting {
   endTime          String /// "HH:MM"
   timeZone         String? /// IANA timezone, null means legacy floating time
   location         String
+  locationId       String?
   videoLink        String?
   isRemote         Boolean       @default(false)
   administrator    String? /// Free-text until People module exists
@@ -236,11 +386,13 @@ model Meeting {
   agendaStatus     AgendaStatus  @default(DRAFT)
   committeeId      String?
   committeeVisible Boolean       @default(false)
+  requiredQuorum   Int?          /// Configurable required quorum count, null for default
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
   organisation   Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   committee      Committee?        @relation(fields: [committeeId], references: [id], onDelete: SetNull)
+  locationRel    MeetingLocation?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
   agendaSections AgendaSection[]
   minutes        Minutes?
   documents      Document[]
@@ -255,12 +407,13 @@ model Meeting {
 }
 
 model MeetingAttendee {
-  id        String   @id @default(uuid())
-  meetingId String
-  userId    String
-  rsvp      String?  @default("PENDING") // 'ACCEPTED', 'DECLINED', 'TENTATIVE', 'PENDING'
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(uuid())
+  meetingId        String
+  userId           String
+  rsvp             String?  @default("PENDING") // 'ACCEPTED', 'DECLINED', 'TENTATIVE', 'PENDING'
+  attendanceStatus String?  @default("PRESENT") // 'PRESENT', 'ABSENT', 'EXCUSED', 'REMOTE', 'LATE'
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
